@@ -4,11 +4,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Shopify/toxiproxy/stream"
+	"github.com/Shopify/toxiproxy/v2/stream"
 )
 
 // The SlicerToxic slices data into multiple smaller packets
-// to simulate real-world TCP behaviour.
+// to simulate real-world TCP behavior.
 type SlicerToxic struct {
 	// Average number of bytes to slice at
 	AverageSize int `json:"average_size"`
@@ -23,8 +23,8 @@ type SlicerToxic struct {
 // Returns a list of chunk offsets to slice up a packet of the
 // given total size. For example, for a size of 100, output might be:
 //
-//     []int{0, 18, 18, 43, 43, 67, 67, 77, 77, 100}
-//           ^---^  ^----^  ^----^  ^----^  ^-----^
+// |    []int{0, 18, 18, 43, 43, 67, 67, 77, 77, 100}
+// |          ^---^  ^----^  ^----^  ^----^  ^-----^
 //
 // This tries to get fairly evenly-varying chunks (no tendency
 // to have a small/large chunk at the start/end).
@@ -37,9 +37,11 @@ func (t *SlicerToxic) chunk(start int, end int) []int {
 		return []int{start, end}
 	}
 
-	// +1 in the size variation to offset favoring of smaller
-	// numbers by integer division
-	mid := start + (end-start)/2 + (rand.Intn(t.SizeVariation*2) - t.SizeVariation) + rand.Intn(1)
+	mid := start + (end-start)/2
+	//#nosec
+	if t.SizeVariation > 0 {
+		mid += rand.Intn(t.SizeVariation*2) - t.SizeVariation
+	}
 	left := t.chunk(start, mid)
 	right := t.chunk(mid, end)
 
